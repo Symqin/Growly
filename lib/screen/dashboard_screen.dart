@@ -34,19 +34,102 @@ class DashboardScreen extends StatelessWidget {
           ),
         ],
       ),
+
+      // 🔁 Stream realtime data dari Firestore
       body: StreamBuilder<List<Habit>>(
         stream: habitService.getHabits(),
         builder: (context, snapshot) {
+          // Loading state
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
+          // Jika belum ada data
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text('Belum ada habit, tambahkan dulu yuk!'),
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Baris judul Habits + ikon tambah
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Habits",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            right: 6.0,
+                          ), // geser dikit ke kiri
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AddHabitScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Center(
+                      child: Text(
+                        "No habit yet",
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
             );
           }
 
+          // ✅ Data tersedia
           final habits = snapshot.data!;
           final totalHabits = habits.length;
           final completedHabits = habits.where((h) => h.isDone).length;
@@ -60,7 +143,7 @@ class DashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 🌿 DAILY TRACK CARD LEBIH BESAR
+                  // 🌿 DAILY TRACK CARD (lebih besar)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -92,9 +175,9 @@ class DashboardScreen extends StatelessWidget {
                           child: LinearProgressIndicator(
                             value: progress,
                             minHeight: 14, // lebih tebal
-                            backgroundColor: Colors.white.withOpacity(0.3),
+                            backgroundColor: Colors.white,
                             valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                              Color.fromARGB(255, 0, 221, 70),
                             ),
                           ),
                         ),
@@ -125,7 +208,7 @@ class DashboardScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        // Baris judul “Habits” + tombol tambah sejajar
+                        // Baris judul “Habits” + tombol tambah
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8, top: 4),
                           child: Row(
@@ -140,9 +223,7 @@ class DashboardScreen extends StatelessWidget {
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.only(
-                                  right: 6.0,
-                                ), // 🔹 geser ke kiri (semakin besar makin ke kiri)
+                                padding: const EdgeInsets.only(right: 6.0),
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(8),
                                   onTap: () {
