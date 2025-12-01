@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'package:growly/auth/register_screen.dart';
-
+import 'package:growly/navbar.dart';
 import 'package:growly/screen/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (user != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        MaterialPageRoute(builder: (context) => const BottomNavApp()),
       );
     } else {
       ScaffoldMessenger.of(
