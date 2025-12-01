@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:growly/auth/login_screen.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({Key? key}) : super(key: key);
@@ -108,10 +109,10 @@ class AccountPage extends StatelessWidget {
               GestureDetector(
                 onTap: () async {
                   await FirebaseAuth.instance.signOut();
-                  Navigator.pushNamedAndRemoveUntil(
+                  Navigator.pushAndRemoveUntil(
                     context,
-                    '/',
-                    (route) => false,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (_) => false,
                   );
                 },
                 child: Row(
