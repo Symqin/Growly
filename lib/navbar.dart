@@ -4,7 +4,7 @@ import 'package:growly/screen/account_page.dart';
 // optional
 
 class BottomNavApp extends StatefulWidget {
-  const BottomNavApp({Key? key}) : super(key: key);
+  const BottomNavApp({super.key});
 
   @override
   State<BottomNavApp> createState() => _BottomNavAppState();
