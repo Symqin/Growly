@@ -43,10 +43,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _loginWithGoogle() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google Sign-In belum diimplementasi')),
-    );
+  void _loginWithGoogle() async {
+    final user = await _authService.loginWithGoogle();
+
+    if (user != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const BottomNavApp()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login Google dibatalkan atau gagal')),
+      );
+    }
   }
 
   InputDecoration _inputDecoration(String hint) {

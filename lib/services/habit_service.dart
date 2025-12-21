@@ -3,71 +3,83 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:growly/models/habit_model.dart';
 
 class HabitService {
-  final CollectionReference _habitsCollection = FirebaseFirestore.instance
+  final CollectionReference habitsCollection = FirebaseFirestore.instance
       .collection('habits');
 
-  String get _uid => FirebaseAuth.instance.currentUser!.uid;
+  final String? userId = FirebaseAuth.instance.currentUser?.uid;
 
-  /// 🟩 Tambah habit baru
-  Future<void> addHabit(String title) async {
-    await _habitsCollection.add({
+  // ===============================
+  // STREAM HABITS
+  // ===============================
+  Stream<List<Habit>> getHabits() {
+    return habitsCollection.where('ownerId', isEqualTo: userId).snapshots().map(
+      (snapshot) {
+        return snapshot.docs
+            .map(
+              (doc) =>
+                  Habit.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+            )
+            .toList();
+      },
+    );
+  }
+
+  // ===============================
+  // ADD HABIT (DARI ADD HABIT SCREEN)
+  // ===============================
+  Future<void> addHabitWithDetail({
+    required String title,
+    required String description,
+    required bool reminderEnabled,
+    required String reminderTime,
+    required String repeat,
+  }) async {
+    await habitsCollection.add({
       'title': title,
-      'isDone': false,
-      'completedDates': [],
-      'ownerId': _uid,
+      'description': description,
+      'completedDates': <String>[],
+      'reminderEnabled': reminderEnabled,
+      'reminderTime': reminderTime,
+      'reminderRepeat': repeat,
+      'ownerId': userId,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
-  /// 🟥 Hapus habit berdasarkan ID
-  Future<void> deleteHabit(String id) async {
-    await _habitsCollection.doc(id).delete();
+  // ===============================
+  // COMPLETE HABIT (CHECK HARI INI)
+  // ===============================
+  Future<void> completeHabit(String habitId) async {
+    final today = _today();
+
+    await habitsCollection.doc(habitId).update({
+      'completedDates': FieldValue.arrayUnion([today]),
+    });
   }
 
-  /// 📡 Ambil daftar habit milik user saat ini
-  Stream<List<Habit>> getHabits() {
-    return _habitsCollection
-        .where('ownerId', isEqualTo: _uid)
-        .orderBy('createdAt', descending: false)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map(
-                (doc) =>
-                    Habit.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-              )
-              .toList();
-        });
+  // ===============================
+  // UNCOMPLETE HABIT (UNCHECK HARI INI)
+  // ===============================
+  Future<void> uncompleteHabit(String habitId) async {
+    final today = _today();
+
+    await habitsCollection.doc(habitId).update({
+      'completedDates': FieldValue.arrayRemove([today]),
+    });
   }
 
-  /// 🔄 Toggle status habit (check/uncheck)
-  Future<void> toggleHabitStatus(String id, bool isDone) async {
-    final docRef = _habitsCollection.doc(id);
-    final docSnapshot = await docRef.get();
+  // ===============================
+  // DELETE HABIT
+  // ===============================
+  Future<void> deleteHabit(String habitId) async {
+    await habitsCollection.doc(habitId).delete();
+  }
 
-    if (docSnapshot.exists) {
-      final data = docSnapshot.data() as Map<String, dynamic>? ?? {};
-
-      // Ambil daftar tanggal selesai
-      List<String> completedDates = List<String>.from(
-        data['completedDates'] ?? [],
-      );
-
-      // Format tanggal hari ini (YYYY-MM-DD)
-      String today = DateTime.now().toIso8601String().substring(0, 10);
-
-      if (isDone) {
-        // Tambahkan tanggal hari ini jika belum ada
-        if (!completedDates.contains(today)) {
-          completedDates.add(today);
-        }
-      } else {
-        // Hapus tanggal hari ini jika uncheck
-        completedDates.remove(today);
-      }
-
-      // Update Firestore
-      await docRef.update({'completedDates': completedDates, 'isDone': isDone});
-    }
+  // ===============================
+  // HELPER: TODAY FORMAT yyyy-MM-dd
+  // ===============================
+  String _today() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
   }
 }

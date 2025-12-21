@@ -4,13 +4,21 @@ import 'package:growly/screen/add_habit_screen.dart';
 import 'package:growly/screen/habit_history_screen.dart';
 import 'package:growly/services/habit_service.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final HabitService habitService = HabitService();
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
 
+class _DashboardScreenState extends State<DashboardScreen> {
+  final HabitService habitService = HabitService();
+
+  /// state lokal per habit
+  final Map<String, bool> _localChecked = {};
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -35,19 +43,18 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
 
-      // 🔁 Stream realtime data dari Firestore
+      // 🔁 realtime Firestore
       body: StreamBuilder<List<Habit>>(
         stream: habitService.getHabits(),
         builder: (context, snapshot) {
-          // Loading state
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // Jika belum ada data
+          // ================= EMPTY STATE =================
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -69,7 +76,6 @@ class DashboardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Baris judul Habits + ikon tambah
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -80,32 +86,27 @@ class DashboardScreen extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            right: 6.0,
-                          ), // geser dikit ke kiri
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(8),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AddHabitScreen(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(8),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AddHabitScreen(),
                               ),
-                              child: const Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                              size: 20,
                             ),
                           ),
                         ),
@@ -122,20 +123,21 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
                   ],
                 ),
               ),
             );
           }
 
-          // ✅ Data tersedia
+          // ================= DATA STATE =================
           final habits = snapshot.data!;
+
           final totalHabits = habits.length;
-          final completedHabits = habits.where((h) => h.isDone).length;
+          final completedToday = habits.where((h) => h.isDoneToday).length;
+
           final progress = totalHabits == 0
               ? 0.0
-              : completedHabits / totalHabits;
+              : completedToday / totalHabits;
 
           return SingleChildScrollView(
             child: Padding(
@@ -143,7 +145,7 @@ class DashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 🌿 DAILY TRACK CARD (lebih besar)
+                  // 🌿 DAILY TRACK CARD
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -174,7 +176,7 @@ class DashboardScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           child: LinearProgressIndicator(
                             value: progress,
-                            minHeight: 14, // lebih tebal
+                            minHeight: 14,
                             backgroundColor: Colors.white,
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               Color.fromARGB(255, 0, 221, 70),
@@ -208,12 +210,11 @@ class DashboardScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        // Baris judul “Habits” + tombol tambah
+                        // Header
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8, top: 4),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               const Text(
                                 "Habits",
@@ -222,30 +223,27 @@ class DashboardScreen extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(right: 6.0),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(8),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const AddHabitScreen(),
-                                      ),
-                                    );
-                                  },
-                                  child: Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black,
-                                      borderRadius: BorderRadius.circular(8),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const AddHabitScreen(),
                                     ),
-                                    child: const Icon(
-                                      Icons.add,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.add,
+                                    color: Colors.white,
+                                    size: 20,
                                   ),
                                 ),
                               ),
@@ -253,77 +251,92 @@ class DashboardScreen extends StatelessWidget {
                           ),
                         ),
 
-                        // Daftar habit
+                        // ================= LIST =================
                         ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: habits.length,
                           itemBuilder: (context, index) {
                             final habit = habits[index];
+
                             return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4.0,
-                              ),
-                              child: CheckboxListTile(
-                                contentPadding: EdgeInsets.zero,
-                                title: Row(
-                                  children: [
-                                    // ikon hapus (-)
-                                    GestureDetector(
-                                      onTap: () =>
-                                          habitService.deleteHabit(habit.id),
-                                      child: Container(
-                                        width: 26,
-                                        height: 26,
-                                        margin: const EdgeInsets.only(
-                                          right: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey.shade300,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: StatefulBuilder(
+                                builder: (context, setLocalState) {
+                                  bool checked =
+                                      _localChecked[habit.id] ??
+                                      habit.isDoneToday;
+
+                                  return CheckboxListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Row(
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () => habitService.deleteHabit(
+                                            habit.id,
                                           ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.remove,
-                                          color: Colors.black54,
-                                          size: 18,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            habit.title,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
+                                          child: Container(
+                                            width: 26,
+                                            height: 26,
+                                            margin: const EdgeInsets.only(
+                                              right: 10,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade300,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: const Icon(
+                                              Icons.remove,
+                                              size: 18,
                                             ),
                                           ),
-                                          Text(
-                                            "🔥 Streak: ${habit.calculateStreak()} hari",
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.black54,
-                                            ),
+                                        ),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                habit.title,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              Text(
+                                                "🔥 Streak: ${habit.calculateStreak()} hari",
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.black54,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                value: habit.isDone,
-                                onChanged: (value) {
-                                  habitService.toggleHabitStatus(
-                                    habit.id,
-                                    value ?? false,
+                                    value: checked,
+                                    activeColor: Colors.green,
+                                    controlAffinity:
+                                        ListTileControlAffinity.trailing,
+                                    onChanged: (value) async {
+                                      setLocalState(() {
+                                        _localChecked[habit.id] =
+                                            value ?? false;
+                                      });
+
+                                      if (value == true) {
+                                        await habitService.completeHabit(
+                                          habit.id,
+                                        );
+                                      } else {
+                                        await habitService.uncompleteHabit(
+                                          habit.id,
+                                        );
+                                      }
+                                    },
                                   );
                                 },
-                                activeColor: Colors.green,
-                                controlAffinity:
-                                    ListTileControlAffinity.trailing,
                               ),
                             );
                           },
