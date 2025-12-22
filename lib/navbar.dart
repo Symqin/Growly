@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:growly/screen/dashboard_screen.dart';
 import 'package:growly/screen/account_page.dart';
 import 'package:growly/screen/statistik_screen.dart';
-// optional
 
 class BottomNavApp extends StatefulWidget {
   const BottomNavApp({super.key});
@@ -14,41 +13,46 @@ class BottomNavApp extends StatefulWidget {
 class _BottomNavAppState extends State<BottomNavApp> {
   int _selectedIndex = 0;
 
-  // Pastikan semua widget di sini terdefinisi dan TIDAK memiliki Scaffold ganda
-  final List<Widget> _pages = [
-    const DashboardScreen(), // index 0 - Home
-    const StatisticsScreen(),
-    const AccountPage(), // jika mau Account sebagai tab, tambahkan satu lagi dan sesuaikan items
-    // index 1 - Statistics
-  ];
-
   void _navigateBottomBar(int index) {
     setState(() => _selectedIndex = index);
+  }
+
+  void _goToAccount() {
+    setState(() => _selectedIndex = 2);
+  }
+
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      DashboardScreen(onAvatarTap: _goToAccount),
+      const StatisticsScreen(),
+      const AccountPage(),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // contoh: tampilkan appBar hanya untuk hom
-
-      // pake IndexedStack supaya state tiap halaman dipertahankan
       body: IndexedStack(index: _selectedIndex, children: _pages),
-
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _navigateBottomBar,
         type: BottomNavigationBarType.fixed,
+
+        selectedItemColor: Color(0xFF34C759),
+        unselectedItemColor: Colors.grey,
+
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
+            icon: Icon(Icons.pie_chart_outline),
             label: 'Statistics',
           ),
 
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Account',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
         ],
       ),
     );
