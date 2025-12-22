@@ -1,21 +1,120 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:growly/auth/login_screen.dart';
 
-class AccountPage extends StatelessWidget {
+class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+  State<AccountPage> createState() => _AccountPageState();
+}
 
+class _AccountPageState extends State<AccountPage> {
+  User? user;
+
+  @override
+  void initState() {
+    super.initState();
+    user = FirebaseAuth.instance.currentUser;
+  }
+
+  // ===============================
+  // UPDATE NAME
+  // ===============================
+  Future<void> _changeName() async {
+    final controller = TextEditingController(text: user?.displayName ?? "");
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Ubah Nama"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: "Nama baru"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+
+              await user!.updateDisplayName(controller.text.trim());
+              await user!.reload();
+
+              setState(() {
+                user = FirebaseAuth.instance.currentUser;
+              });
+
+              Navigator.pop(context);
+            },
+            child: const Text("Simpan"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===============================
+  // UPDATE PHOTO (URL BASED)
+  // ===============================
+  Future<void> _changePhoto() async {
+    final controller = TextEditingController(text: user?.photoURL ?? "");
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Ubah Foto"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: "URL Foto (https://...)"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+
+              await user!.updatePhotoURL(controller.text.trim());
+              await user!.reload();
+
+              setState(() {
+                user = FirebaseAuth.instance.currentUser;
+              });
+
+              Navigator.pop(context);
+            },
+            child: const Text("Simpan"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===============================
+  // LOGOUT (EMAIL + GOOGLE)
+  // ===============================
+  Future<void> _logout(BuildContext context) async {
+    await GoogleSignIn().signOut();
+    await FirebaseAuth.instance.signOut();
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(
-        255,
-        255,
-        255,
-        255,
-      ), // abu-abu seperti gambar
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -30,11 +129,16 @@ class AccountPage extends StatelessWidget {
 
               const SizedBox(height: 30),
 
-              // Profile circle
+              // PROFILE
               CircleAvatar(
                 radius: 55,
-                backgroundColor: const Color.fromARGB(255, 31, 119, 55),
-                child: const Icon(Icons.person, size: 60, color: Colors.white),
+                backgroundColor: Colors.green,
+                backgroundImage: user?.photoURL != null
+                    ? NetworkImage(user!.photoURL!)
+                    : null,
+                child: user?.photoURL == null
+                    ? const Icon(Icons.person, size: 60, color: Colors.white)
+                    : null,
               ),
 
               const SizedBox(height: 22),
@@ -44,7 +148,6 @@ class AccountPage extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
                 ),
               ),
 
@@ -52,69 +155,32 @@ class AccountPage extends StatelessWidget {
 
               Text(
                 user?.email ?? "email@domain.com",
-                style: const TextStyle(fontSize: 15, color: Colors.black87),
+                style: const TextStyle(fontSize: 15),
               ),
 
               const SizedBox(height: 40),
 
-              // CARD 1: Ubah Nama
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 255, 255, 255),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.settings, color: Colors.black54),
-                    SizedBox(width: 14),
-                    Text(
-                      "Ubah Nama",
-                      style: TextStyle(fontSize: 16, color: Colors.black87),
-                    ),
-                  ],
-                ),
+              // UBAH NAMA
+              _menuItem(
+                icon: Icons.edit,
+                text: "Ubah Nama",
+                onTap: _changeName,
               ),
 
               const SizedBox(height: 16),
 
-              // CARD 2: Ubah Foto
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 255, 255, 255),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.settings, color: Colors.black54),
-                    SizedBox(width: 14),
-                    Text(
-                      "Ubah Foto",
-                      style: TextStyle(fontSize: 16, color: Colors.black87),
-                    ),
-                  ],
-                ),
+              // UBAH FOTO
+              _menuItem(
+                icon: Icons.image,
+                text: "Ubah Foto",
+                onTap: _changePhoto,
               ),
 
               const SizedBox(height: 50),
 
-              // LOGOUT button
+              // LOGOUT
               GestureDetector(
-                onTap: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (_) => false,
-                  );
-                },
+                onTap: () => _logout(context),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
@@ -133,6 +199,40 @@ class AccountPage extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ===============================
+  // MENU ITEM WIDGET
+  // ===============================
+  Widget _menuItem({
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.black54),
+            const SizedBox(width: 14),
+            Text(text, style: const TextStyle(fontSize: 16)),
+          ],
         ),
       ),
     );

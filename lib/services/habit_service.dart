@@ -47,6 +47,26 @@ class HabitService {
   }
 
   // ===============================
+  // UPDATE HABIT (EDIT MODE)
+  // ===============================
+  Future<void> updateHabit(
+    String habitId, {
+    required String title,
+    required String description,
+    required bool reminderEnabled,
+    required String reminderTime,
+    required String repeat,
+  }) async {
+    await habitsCollection.doc(habitId).update({
+      'title': title,
+      'description': description,
+      'reminderEnabled': reminderEnabled,
+      'reminderTime': reminderTime,
+      'reminderRepeat': repeat,
+    });
+  }
+
+  // ===============================
   // COMPLETE HABIT (CHECK HARI INI)
   // ===============================
   Future<void> completeHabit(String habitId) async {

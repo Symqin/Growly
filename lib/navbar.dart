@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:growly/screen/dashboard_screen.dart';
 import 'package:growly/screen/account_page.dart';
+import 'package:growly/screen/statistik_screen.dart';
 // optional
 
 class BottomNavApp extends StatefulWidget {
@@ -16,7 +17,9 @@ class _BottomNavAppState extends State<BottomNavApp> {
   // Pastikan semua widget di sini terdefinisi dan TIDAK memiliki Scaffold ganda
   final List<Widget> _pages = [
     const DashboardScreen(), // index 0 - Home
+    const StatisticsScreen(),
     const AccountPage(), // jika mau Account sebagai tab, tambahkan satu lagi dan sesuaikan items
+    // index 1 - Statistics
   ];
 
   void _navigateBottomBar(int index) {
@@ -37,6 +40,10 @@ class _BottomNavAppState extends State<BottomNavApp> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Statistics',
+          ),
 
           BottomNavigationBarItem(
             icon: Icon(Icons.account_circle),

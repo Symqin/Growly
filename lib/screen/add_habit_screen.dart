@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:growly/services/habit_service.dart';
+import 'package:growly/models/habit_model.dart';
 
 class AddHabitScreen extends StatefulWidget {
-  const AddHabitScreen({super.key});
+  final Habit? habitToEdit; // null = add, ada = edit
+
+  const AddHabitScreen({super.key, this.habitToEdit});
 
   @override
   State<AddHabitScreen> createState() => _AddHabitScreenState();
@@ -16,7 +19,28 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
 
   bool _reminderEnabled = true;
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 30);
-  String _repeat = "Every day";
+  final String _repeat = "Every day";
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ===== EDIT MODE =====
+    if (widget.habitToEdit != null) {
+      _nameController.text = widget.habitToEdit!.title;
+      _descController.text = widget.habitToEdit!.description ?? '';
+      _reminderEnabled = widget.habitToEdit!.reminderEnabled;
+
+      if (widget.habitToEdit!.reminderTime != null &&
+          widget.habitToEdit!.reminderTime!.isNotEmpty) {
+        final parts = widget.habitToEdit!.reminderTime!.split(':');
+        _selectedTime = TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      }
+    }
+  }
 
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
@@ -34,24 +58,41 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   void _saveHabit() async {
     if (_nameController.text.trim().isEmpty) return;
 
-    await habitService.addHabitWithDetail(
-      title: _nameController.text.trim(),
-      description: _descController.text.trim(),
-      reminderEnabled: _reminderEnabled,
-      reminderTime:
-          "${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}",
-      repeat: _repeat,
-    );
+    final reminderTime =
+        "${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}";
+
+    if (widget.habitToEdit == null) {
+      // ===== ADD HABIT =====
+      await habitService.addHabitWithDetail(
+        title: _nameController.text.trim(),
+        description: _descController.text.trim(),
+        reminderEnabled: _reminderEnabled,
+        reminderTime: reminderTime,
+        repeat: _repeat,
+      );
+    } else {
+      // ===== UPDATE HABIT =====
+      await habitService.updateHabit(
+        widget.habitToEdit!.id,
+        title: _nameController.text.trim(),
+        description: _descController.text.trim(),
+        reminderEnabled: _reminderEnabled,
+        reminderTime: reminderTime,
+        repeat: _repeat,
+      );
+    }
 
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.habitToEdit != null;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Add Habit"),
+        title: Text(isEdit ? "Edit Habit" : "Add Habit"),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -65,6 +106,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ===== NAME =====
             const Text("NAME", style: TextStyle(fontSize: 12)),
             const SizedBox(height: 6),
             TextField(
@@ -77,6 +119,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
 
             const SizedBox(height: 24),
 
+            // ===== GOAL / DESCRIPTION =====
             const Text("GOAL", style: TextStyle(fontSize: 12)),
             const SizedBox(height: 6),
             Container(
@@ -87,6 +130,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               ),
               child: TextField(
                 controller: _descController,
+                maxLines: 3,
                 decoration: const InputDecoration(
                   hintText: "Deskripsi",
                   border: InputBorder.none,
@@ -96,6 +140,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
 
             const SizedBox(height: 24),
 
+            // ===== REMINDER =====
             const Text("REMINDERS", style: TextStyle(fontSize: 12)),
             const SizedBox(height: 8),
 
@@ -151,6 +196,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
 
             const Spacer(),
 
+            // ===== BUTTON =====
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -162,9 +208,9 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   ),
                 ),
                 onPressed: _saveHabit,
-                child: const Text(
-                  "Add Habit",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                child: Text(
+                  isEdit ? "Save Changes" : "Add Habit",
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ),

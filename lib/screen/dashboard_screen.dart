@@ -3,6 +3,8 @@ import 'package:growly/models/habit_model.dart';
 import 'package:growly/screen/add_habit_screen.dart';
 import 'package:growly/screen/habit_history_screen.dart';
 import 'package:growly/services/habit_service.dart';
+import 'package:growly/screen/account_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -19,20 +21,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
         title: const Text(
           "Growly",
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
         ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+
+        // 👤 USER AVATAR
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 20),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AccountPage()),
+              );
+            },
+            child: CircleAvatar(
+              radius: 11, // 🔥 KECIL BANGET
+              backgroundColor: const Color(0xFFE6F4EA),
+              backgroundImage: user?.photoURL != null
+                  ? NetworkImage(user!.photoURL!)
+                  : null,
+              child: user?.photoURL == null
+                  ? const Icon(
+                      Icons.person,
+                      size: 13, // 🔥 KECILIN ICON
+                      color: Color(0xFF1E7F43),
+                    )
+                  : null,
+            ),
+          ),
+        ),
+
         actions: [
           IconButton(
-            icon: const Icon(Icons.history),
+            icon: const Icon(Icons.history, color: Colors.black),
             onPressed: () {
               Navigator.push(
                 context,
@@ -267,74 +298,190 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       _localChecked[habit.id] ??
                                       habit.isDoneToday;
 
-                                  return CheckboxListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    title: Row(
-                                      children: [
-                                        GestureDetector(
-                                          onTap: () => habitService.deleteHabit(
-                                            habit.id,
-                                          ),
-                                          child: Container(
-                                            width: 26,
-                                            height: 26,
-                                            margin: const EdgeInsets.only(
-                                              right: 10,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade300,
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            child: const Icon(
-                                              Icons.remove,
-                                              size: 18,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                habit.title,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                              Text(
-                                                "🔥 Streak: ${habit.calculateStreak()} hari",
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.black54,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                  return Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 6,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.04),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
                                         ),
                                       ],
                                     ),
-                                    value: checked,
-                                    activeColor: Colors.green,
-                                    controlAffinity:
-                                        ListTileControlAffinity.trailing,
-                                    onChanged: (value) async {
-                                      setLocalState(() {
-                                        _localChecked[habit.id] =
-                                            value ?? false;
-                                      });
+                                    child: ExpansionTile(
+                                      tilePadding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      childrenPadding:
+                                          const EdgeInsets.fromLTRB(
+                                            44,
+                                            4,
+                                            16,
+                                            12,
+                                          ),
+                                      shape:
+                                          const Border(), // 🔥 HILANGKAN GARIS
+                                      collapsedShape:
+                                          const Border(), // 🔥 HILANGKAN GARIS
+                                      trailing: Checkbox(
+                                        value: checked,
+                                        activeColor: Colors.green,
+                                        onChanged: (value) async {
+                                          setLocalState(() {
+                                            _localChecked[habit.id] =
+                                                value ?? false;
+                                          });
 
-                                      if (value == true) {
-                                        await habitService.completeHabit(
-                                          habit.id,
-                                        );
-                                      } else {
-                                        await habitService.uncompleteHabit(
-                                          habit.id,
-                                        );
-                                      }
-                                    },
+                                          if (value == true) {
+                                            await habitService.completeHabit(
+                                              habit.id,
+                                            );
+                                          } else {
+                                            await habitService.uncompleteHabit(
+                                              habit.id,
+                                            );
+                                          }
+                                        },
+                                      ),
+
+                                      // ================= HEADER =================
+                                      title: Row(
+                                        children: [
+                                          // DELETE
+                                          GestureDetector(
+                                            onTap: () => habitService
+                                                .deleteHabit(habit.id),
+                                            child: Container(
+                                              width: 26,
+                                              height: 26,
+                                              margin: const EdgeInsets.only(
+                                                right: 10,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade200,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: const Icon(
+                                                Icons.remove,
+                                                size: 18,
+                                              ),
+                                            ),
+                                          ),
+
+                                          // TITLE + META
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  habit.title,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 15,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Row(
+                                                  children: [
+                                                    if (habit.reminderEnabled)
+                                                      Text(
+                                                        habit.reminderTime ??
+                                                            '',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.black54,
+                                                        ),
+                                                      ),
+                                                    if (habit.reminderEnabled)
+                                                      const SizedBox(width: 8),
+                                                    Text(
+                                                      "🔥 ${habit.calculateStreak()}",
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.black54,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      // ================= EXPANDED =================
+                                      children: [
+                                        // DESCRIPTION
+                                        if ((habit.description ?? '')
+                                            .isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 12,
+                                            ),
+                                            child: Text(
+                                              habit.description!,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                          ),
+
+                                        // ===== ACTIONS =====
+                                        Row(
+                                          children: [
+                                            // EDIT
+                                            TextButton.icon(
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => AddHabitScreen(
+                                                      habitToEdit:
+                                                          habit, // ⬅️ EDIT MODE
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                Icons.edit,
+                                                size: 18,
+                                              ),
+                                              label: const Text("Edit"),
+                                            ),
+
+                                            const SizedBox(width: 8),
+
+                                            // DELETE (SECONDARY)
+                                            TextButton.icon(
+                                              onPressed: () => habitService
+                                                  .deleteHabit(habit.id),
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                size: 18,
+                                                color: Colors.red,
+                                              ),
+                                              label: const Text(
+                                                "Delete",
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 },
                               ),
