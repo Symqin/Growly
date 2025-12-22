@@ -156,11 +156,18 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        "Remember to set off time for a workout today.",
+                        "Remember to set off time.",
                         style: TextStyle(fontSize: 13),
                       ),
                       Switch(
                         value: _reminderEnabled,
+                        activeColor: Colors.green, // bulatan
+                        activeTrackColor: const Color.fromARGB(
+                          255,
+                          222,
+                          222,
+                          222,
+                        ), // track
                         onChanged: (val) {
                           setState(() {
                             _reminderEnabled = val;
