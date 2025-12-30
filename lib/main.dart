@@ -4,10 +4,18 @@ import 'package:growly/auth/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'package:growly/navbar.dart';
+import 'package:growly/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  try {
+    await NotificationService.init();
+  } catch (e) {
+    debugPrint('Notification init failed: $e');
+  }
+
   runApp(const MyApp());
 }
 

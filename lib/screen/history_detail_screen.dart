@@ -13,8 +13,32 @@ class HistoryDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final completed = habits.where((h) => h.completedDates.contains(date));
-    final uncompleted = habits.where((h) => !h.completedDates.contains(date));
+    final targetDate = DateTime.parse(date);
+
+    // 🔥 PERBAIKAN: Filter habit berdasarkan tanggal pembuatan (Hanya Tahun-Bulan-Hari)
+    final validHabits = habits.where((h) {
+      final createdDateOnly = DateTime(
+        h.createdAt.year,
+        h.createdAt.month,
+        h.createdAt.day,
+      );
+      final targetDateOnly = DateTime(
+        targetDate.year,
+        targetDate.month,
+        targetDate.day,
+      );
+
+      // Habit valid jika dibuat sebelum atau tepat pada tanggal target
+      return !createdDateOnly.isAfter(targetDateOnly);
+    }).toList();
+
+    final completed = validHabits
+        .where((h) => h.completedDates.contains(date))
+        .toList();
+
+    final uncompleted = validHabits
+        .where((h) => !h.completedDates.contains(date))
+        .toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -33,18 +57,11 @@ class HistoryDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ===============================
-            // TITLE DATE
-            // ===============================
             Text(
               "History ${_prettyDate(date)}",
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-
-            // ===============================
-            // LIST HABITS
-            // ===============================
             Expanded(
               child: ListView(
                 children: [
@@ -65,12 +82,7 @@ class HistoryDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 10),
-
-            // ===============================
-            // BACK BUTTON
-            // ===============================
             Center(
               child: Container(
                 width: 46,
@@ -91,9 +103,6 @@ class HistoryDetailScreen extends StatelessWidget {
     );
   }
 
-  // ===============================
-  // ITEM CARD
-  // ===============================
   Widget _historyItem({
     required String title,
     String? time,
@@ -115,7 +124,6 @@ class HistoryDetailScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // TITLE + TIME
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,8 +143,6 @@ class HistoryDetailScreen extends StatelessWidget {
               ],
             ),
           ),
-
-          // STATUS ICON
           Container(
             width: 34,
             height: 34,
@@ -155,9 +161,6 @@ class HistoryDetailScreen extends StatelessWidget {
     );
   }
 
-  // ===============================
-  // DATE FORMATTER
-  // ===============================
   static String _prettyDate(String date) {
     final d = DateTime.parse(date);
     const months = [

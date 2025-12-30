@@ -3,51 +3,65 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:growly/models/habit_model.dart';
 
 class HabitService {
-  final CollectionReference habitsCollection = FirebaseFirestore.instance
-      .collection('habits');
-
-  final String? userId = FirebaseAuth.instance.currentUser?.uid;
+  final CollectionReference _habits = FirebaseFirestore.instance.collection(
+    'habits',
+  );
 
   // ===============================
-  // STREAM HABITS
+  // AMBIL USER ID (REALTIME)
   // ===============================
-  Stream<List<Habit>> getHabits() {
-    return habitsCollection.where('ownerId', isEqualTo: userId).snapshots().map(
-      (snapshot) {
-        return snapshot.docs
-            .map(
-              (doc) =>
-                  Habit.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-            )
-            .toList();
-      },
-    );
+  String _uid() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('User belum login');
+    }
+    return user.uid;
   }
 
   // ===============================
-  // ADD HABIT (DARI ADD HABIT SCREEN)
+  // STREAM HABITS (DASHBOARD)
   // ===============================
-  Future<void> addHabitWithDetail({
+  Stream<List<Habit>> getHabits() {
+    return _habits
+        .where('ownerId', isEqualTo: _uid())
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) =>
+                    Habit.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+              )
+              .toList(),
+        );
+  }
+
+  // ===============================
+  // ADD HABIT
+  // ===============================
+  Future<String> addHabitWithDetail({
     required String title,
     required String description,
     required bool reminderEnabled,
     required String reminderTime,
     required String repeat,
   }) async {
-    await habitsCollection.add({
+    final doc = await _habits.add({
       'title': title,
       'description': description,
       'completedDates': <String>[],
       'reminderEnabled': reminderEnabled,
       'reminderTime': reminderTime,
       'reminderRepeat': repeat,
-      'ownerId': userId,
-      'createdAt': FieldValue.serverTimestamp(),
+      'ownerId': _uid(),
+      'createdAt': Timestamp.fromDate(DateTime.now()),
     });
+
+    return doc.id;
   }
 
   // ===============================
-  // UPDATE HABIT (EDIT MODE)
+  // UPDATE HABIT (EDIT)
   // ===============================
   Future<void> updateHabit(
     String habitId, {
@@ -57,7 +71,7 @@ class HabitService {
     required String reminderTime,
     required String repeat,
   }) async {
-    await habitsCollection.doc(habitId).update({
+    await _habits.doc(habitId).update({
       'title': title,
       'description': description,
       'reminderEnabled': reminderEnabled,
@@ -67,36 +81,29 @@ class HabitService {
   }
 
   // ===============================
-  // COMPLETE HABIT (CHECK HARI INI)
+  // COMPLETE / UNCOMPLETE
   // ===============================
   Future<void> completeHabit(String habitId) async {
-    final today = _today();
-
-    await habitsCollection.doc(habitId).update({
-      'completedDates': FieldValue.arrayUnion([today]),
+    await _habits.doc(habitId).update({
+      'completedDates': FieldValue.arrayUnion([_today()]),
     });
   }
 
-  // ===============================
-  // UNCOMPLETE HABIT (UNCHECK HARI INI)
-  // ===============================
   Future<void> uncompleteHabit(String habitId) async {
-    final today = _today();
-
-    await habitsCollection.doc(habitId).update({
-      'completedDates': FieldValue.arrayRemove([today]),
+    await _habits.doc(habitId).update({
+      'completedDates': FieldValue.arrayRemove([_today()]),
     });
   }
 
   // ===============================
-  // DELETE HABIT
+  // DELETE
   // ===============================
   Future<void> deleteHabit(String habitId) async {
-    await habitsCollection.doc(habitId).delete();
+    await _habits.doc(habitId).delete();
   }
 
   // ===============================
-  // HELPER: TODAY FORMAT yyyy-MM-dd
+  // HELPER
   // ===============================
   String _today() {
     final now = DateTime.now();

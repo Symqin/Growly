@@ -1,22 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Habit {
   final String id;
   final String title;
   final List<String> completedDates;
   final String? ownerId;
 
-  // ===== TAMBAHAN BARU (AMAN) =====
+  // ===== DETAIL =====
   final String? description;
   final bool reminderEnabled;
   final String? reminderTime;
   final String? reminderRepeat;
 
+  // ===== 🔥 PENTING UNTUK STATISTIK =====
+  final DateTime createdAt;
+
   Habit({
     required this.id,
     required this.title,
     required this.completedDates,
+    required this.createdAt,
     this.ownerId,
-
-    // ===== TAMBAHAN BARU =====
     this.description,
     this.reminderEnabled = false,
     this.reminderTime,
@@ -24,37 +28,35 @@ class Habit {
   });
 
   // ===============================
-  // FACTORY FROM FIRESTORE MAP
+  // FROM FIRESTORE
   // ===============================
   factory Habit.fromMap(Map<String, dynamic> data, String documentId) {
     return Habit(
       id: documentId,
-      title: data['title'] as String,
+      title: data['title'] ?? '',
       completedDates: List<String>.from(data['completedDates'] ?? []),
-      ownerId: data['ownerId'] as String?,
-
-      // ===== TAMBAHAN BARU =====
-      description: data['description'] as String?,
+      ownerId: data['ownerId'],
+      description: data['description'],
       reminderEnabled: data['reminderEnabled'] ?? false,
-      reminderTime: data['reminderTime'] as String?,
-      reminderRepeat: data['reminderRepeat'] as String?,
+      reminderTime: data['reminderTime'],
+      reminderRepeat: data['reminderRepeat'],
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
   // ===============================
-  // TO FIRESTORE MAP
+  // TO FIRESTORE
   // ===============================
   Map<String, dynamic> toMap() {
     return {
       'title': title,
       'completedDates': completedDates,
       'ownerId': ownerId,
-
-      // ===== TAMBAHAN BARU =====
       'description': description,
       'reminderEnabled': reminderEnabled,
       'reminderTime': reminderTime,
       'reminderRepeat': reminderRepeat,
+      'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 
@@ -66,24 +68,22 @@ class Habit {
     String? title,
     List<String>? completedDates,
     String? ownerId,
-
-    // ===== TAMBAHAN BARU =====
     String? description,
     bool? reminderEnabled,
     String? reminderTime,
     String? reminderRepeat,
+    DateTime? createdAt,
   }) {
     return Habit(
       id: id ?? this.id,
       title: title ?? this.title,
       completedDates: completedDates ?? this.completedDates,
       ownerId: ownerId ?? this.ownerId,
-
-      // ===== TAMBAHAN BARU =====
       description: description ?? this.description,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderTime: reminderTime ?? this.reminderTime,
       reminderRepeat: reminderRepeat ?? this.reminderRepeat,
+      createdAt: createdAt ?? this.createdAt, // 🔥 PENTING
     );
   }
 

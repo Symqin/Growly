@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:growly/models/habit_model.dart';
 import 'package:growly/services/habit_service.dart';
 import 'package:intl/intl.dart';
-import 'package:growly/screen/history_detail_screen.dart';
+import 'history_detail_screen.dart';
 
 class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
@@ -31,9 +31,10 @@ class StatisticsScreen extends StatelessWidget {
           }
 
           final habits = snapshot.data!;
+          final DateTime now = DateTime.now();
 
           // ===============================
-          // AGGREGATE DATA
+          // AGGREGATE GLOBAL DATA
           // ===============================
           final allDates = <String>{};
           for (final h in habits) {
@@ -41,10 +42,10 @@ class StatisticsScreen extends StatelessWidget {
           }
 
           int currentStreak = 0;
-          DateTime day = DateTime.now();
-          while (allDates.contains(_fmt(day))) {
+          DateTime tempDay = now;
+          while (allDates.contains(_fmt(tempDay))) {
             currentStreak++;
-            day = day.subtract(const Duration(days: 1));
+            tempDay = tempDay.subtract(const Duration(days: 1));
           }
 
           int longestStreak = 0;
@@ -55,14 +56,24 @@ class StatisticsScreen extends StatelessWidget {
 
           final daysActive = allDates.length;
 
-          final completedToday = habits.where((h) => h.isDoneToday).length;
-          final completionRate = habits.isEmpty
-              ? 0
-              : ((completedToday / habits.length) * 100).round();
+          // 🔥 PERBAIKAN: Filter habit yang sudah ada HARI INI saja untuk Completion Rate
+          final habitsExistingToday = habits.where((h) {
+            final createdDateOnly = DateTime(
+              h.createdAt.year,
+              h.createdAt.month,
+              h.createdAt.day,
+            );
+            final todayOnly = DateTime(now.year, now.month, now.day);
+            return !createdDateOnly.isAfter(todayOnly);
+          }).toList();
 
-          // ===============================
-          // HISTORY PER DAY
-          // ===============================
+          final completedToday = habitsExistingToday
+              .where((h) => h.isDoneToday)
+              .length;
+          final completionRate = habitsExistingToday.isEmpty
+              ? 0
+              : ((completedToday / habitsExistingToday.length) * 100).round();
+
           final historyMap = <String, int>{};
           for (final h in habits) {
             for (final d in h.completedDates) {
@@ -87,7 +98,6 @@ class StatisticsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-
                 GridView.count(
                   crossAxisCount: 2,
                   shrinkWrap: true,
@@ -121,9 +131,7 @@ class StatisticsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 32),
-
                 const Center(
                   child: Text(
                     "History",
@@ -131,25 +139,13 @@ class StatisticsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-
-                // 🔥 HANYA DITAMBAH GESTURE
-                for (final date in historyDates)
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              HistoryDetailScreen(date: date, habits: habits),
-                        ),
-                      );
-                    },
-                    child: _historyCard(
-                      date: date,
-                      count: historyMap[date]!,
-                      total: habits.length,
-                    ),
+                for (final date in historyDates) ...[
+                  _buildHistoryItem(
+                    context: context,
+                    date: date,
+                    habits: habits,
                   ),
+                ],
               ],
             ),
           );
@@ -158,9 +154,51 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 
-  // ===============================
-  // STAT CARD
-  // ===============================
+  Widget _buildHistoryItem({
+    required BuildContext context,
+    required String date,
+    required List<Habit> habits,
+  }) {
+    final targetDate = DateTime.parse(date);
+
+    // 🔥 PERBAIKAN: Filter habit yang sudah ada di tanggal tersebut
+    final validHabits = habits.where((h) {
+      final created = DateTime(
+        h.createdAt.year,
+        h.createdAt.month,
+        h.createdAt.day,
+      );
+      final target = DateTime(
+        targetDate.year,
+        targetDate.month,
+        targetDate.day,
+      );
+      return !created.isAfter(target);
+    }).toList();
+
+    final completedCount = validHabits
+        .where((h) => h.completedDates.contains(date))
+        .length;
+
+    final totalHabitsAtThatTime = validHabits.length;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HistoryDetailScreen(date: date, habits: habits),
+          ),
+        );
+      },
+      child: _historyCard(
+        date: date,
+        count: completedCount,
+        total: totalHabitsAtThatTime,
+      ),
+    );
+  }
+
   static Widget _statCard({
     required IconData icon,
     required Color color,
@@ -196,9 +234,6 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 
-  // ===============================
-  // HISTORY CARD (TIDAK DIUBAH)
-  // ===============================
   static Widget _historyCard({
     required String date,
     required int count,
@@ -212,13 +247,6 @@ class StatisticsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF2F3E46),
         borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
