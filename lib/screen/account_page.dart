@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:growly/auth/login_screen.dart';
+import 'package:growly/services/notification_service.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -101,6 +102,9 @@ class _AccountPageState extends State<AccountPage> {
   // LOGOUT (EMAIL + GOOGLE)
   // ===============================
   Future<void> _logout(BuildContext context) async {
+    // Cancel semua notifikasi yang terjadwal sebelum logout
+    await NotificationService.cancelAll();
+
     await GoogleSignIn().signOut();
     await FirebaseAuth.instance.signOut();
 
